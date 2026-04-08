@@ -9,6 +9,10 @@ export default function Home() {
 
   const handleJoin = () => {
     const name = username.trim() === "" ? "Guest" : username.trim();
+
+    const meetingId = process.env.NEXT_PUBLIC_CALL_ID;
+    router.push(`/meeting/${meetingId}?name=${encodeURIComponent(name)}`);
+
     
   }
 
