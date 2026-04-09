@@ -1,6 +1,6 @@
-import { StreamClient } from "stream-chat";
+import { StreamChat } from "stream-chat";
 
-const apiKey = process.env.STREAM_API_KEY;
+const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY;
 const apiSecret = process.env.STREAM_API_SECRET;
 
 export async function POST(request) {
@@ -10,27 +10,26 @@ export async function POST(request) {
     if (!apiKey || !apiSecret) {
       return Response.json(
         { error: "Missing API credentials" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
-    const serverClient = new StreamClient(apiKey, apiSecret);
+    // ✅ Correct way to create server client
+    const serverClient = StreamChat.getInstance(apiKey, apiSecret);
 
     const newUser = {
       id: userId,
-      role: "admin",
       name: userId,
     };
 
+    // ✅ Correct method
     await serverClient.upsertUser(newUser);
 
-    const validity = 60 * 60 * 24;
-    const token = serverClient.generateUserToken({
-      user_id: userId,
-      validity_in_seconds: validity,
-    });
+    // ✅ Correct token method
+    const token = serverClient.createToken(userId);
 
     return Response.json({ token });
+
   } catch (error) {
     console.error("Error generating user token:", error);
     return Response.json(
