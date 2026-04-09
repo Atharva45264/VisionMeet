@@ -6,6 +6,7 @@ import { useParams, useSearchParams, useRouter } from "next/navigation";
 import React from "react";
 import { useEffect, useState } from "react";
 import StreamProvider from "@/app/components/stream-provider";
+import MeetingRoom from "@/app/components/meeting-room";
 
 
 const MeetingPage = () => {
@@ -71,9 +72,16 @@ if (!token || !user) {
   );
 }
 
+const handleLeave = () => {
+  router.push("/");
+};
+
+
   return(
     <StreamProvider user={user} token={token}>
-      <StreamTheme>Meeting Room </StreamTheme>
+      <StreamTheme>
+        <MeetingRoom callId={callId} onLeave={handleLeave} userId={user.id} />
+      </StreamTheme>
     </StreamProvider>
   );
 };
