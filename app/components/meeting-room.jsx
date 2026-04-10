@@ -113,6 +113,9 @@ const MeetingRoom = ({ callId, onLeave, userId }) => {
         </div>
 
         {/* Transcription */}
+        <div className="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden shadow-2xl">
+          Transcripts
+        </div>
 
       </div>
     </div>
