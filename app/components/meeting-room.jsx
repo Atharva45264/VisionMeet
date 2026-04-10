@@ -1,9 +1,12 @@
 "use client";
-
+import { CallControls } from "@stream-io/video-react-sdk";
+import { PaginatedGridLayout }from "@stream-io/video-react-sdk";
 import { StreamCall, useStreamVideoClient } from "@stream-io/video-react-sdk";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import "@stream-io/video-react-sdk/dist/css/styles.css";
 
-const MeetingRoom = (callId, onLeave, userId) => {
+
+const MeetingRoom = ({ callId, onLeave, userId }) => {
   const client = useStreamVideoClient();
   const [call, setCall] = useState(null);
   const [error, setError] = useState(null);
@@ -13,13 +16,16 @@ const MeetingRoom = (callId, onLeave, userId) => {
 
   const callType = "default";
 
+  const safeCallId =
+    typeof callId === "string" ? callId : callId?.toString();
+
   useEffect(() => {
     if (!client || joinedRef.current) return;
     joinedRef.current = true;
 
     const init = async () => {
       try {
-        const myCall = client.call(callType, callId);
+        const myCall = client.call(callType, safeCallId); // ✅ FIXED
 
         await myCall.getOrCreate({
           data: {
@@ -29,6 +35,9 @@ const MeetingRoom = (callId, onLeave, userId) => {
         });
 
         await myCall.join();
+
+        await myCall.camera.enable();
+        await myCall.microphone.enable();
         await myCall.startClosedCaptions({ language: "en" });
 
         myCall.on("call.session_ended", () => {
@@ -41,16 +50,17 @@ const MeetingRoom = (callId, onLeave, userId) => {
         setError(error.message);
       }
     };
+
     init();
 
-    return() =>{
-        if(call && !leavingRef.current){
-            leavingRef.current = true;
-            call.stopClosedCaptions().catch(() => {});
-            call.leave().catch(() => {});
-        }
-    }
-  }, [client, callId, userId]);
+    return () => {
+      if (call && !leavingRef.current) {
+        leavingRef.current = true;
+        call.stopClosedCaptions().catch(() => {});
+        call.leave().catch(() => {});
+      }
+    };
+  }, [client, safeCallId, userId]);
 
   if (error)
     return (
@@ -91,10 +101,15 @@ const MeetingRoom = (callId, onLeave, userId) => {
   <StreamCall call={call}>
     <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-white container mx-auto px-4 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6 h-screen">
-        
         <div className="flex flex-col gap-4">
           {/* Speaker Layout */}
+          <div className="flex-1 rounded-xl bg-gray-800 border border-gray-700 overflow-hidden shadow-2xl">
+          <PaginatedGridLayout />
+          </div>
           {/* Call Controls */}
+          <div className="flex justify-center pb-4 bg-gray-800 rounded-full px-8 py-4 border border-gray-700 shadow-xl w-fit mx-auto">
+          <CallControls onLeave={handleLeaveClick} />
+          </div>
         </div>
 
         {/* Transcription */}

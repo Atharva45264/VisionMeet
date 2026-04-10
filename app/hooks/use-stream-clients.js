@@ -1,37 +1,45 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-
 import { StreamVideoClient } from "@stream-io/video-react-sdk";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StreamChat } from "stream-chat";
-
 
 export function useStreamClients({ apiKey, user, token }) {
   const [videoClient, setVideoClient] = useState(null);
   const [chatClient, setChatClient] = useState(null);
 
-  useEffect(() => {
-    if (!user || !token || !apiKey) return;
+  const connectedRef = useRef(false);
 
-    let isMounted = true; 
+  useEffect(() => {
+    if (!user || !token || !apiKey || connectedRef.current) return;
+
+    let myVideoClient;
+    let myChatClient;
 
     const initClients = async () => {
       try {
         const tokenProvider = () => Promise.resolve(token);
 
-        const myVideoClient = new StreamVideoClient({
+        // ✅ VIDEO CLIENT
+        myVideoClient = StreamVideoClient.getOrCreateInstance({
           apiKey,
           user,
           tokenProvider,
         });
 
+        // 🔥 IMPORTANT FIX
+        await myVideoClient.connectUser(user, token);
 
-        const myChatClient = StreamChat.getInstance(apiKey);
-        await myChatClient.connectUser(user,token);
+        // ✅ CHAT CLIENT
+        myChatClient = StreamChat.getInstance(apiKey);
 
-        if (isMounted){
-            setVideoClient(myVideoClient);
-            setChatClient(myChatClient);
+        if (!myChatClient.userID) {
+          await myChatClient.connectUser(user, token);
         }
+
+        connectedRef.current = true;
+
+        setVideoClient(myVideoClient);
+        setChatClient(myChatClient);
+
       } catch (e) {
         console.error("Error initializing clients:", e);
       }
@@ -40,13 +48,13 @@ export function useStreamClients({ apiKey, user, token }) {
     initClients();
 
     return () => {
-      isMounted = false;
-      if (videoClient) {
-        videoClient.disconnectUser().catch(console.error);
+      if (myVideoClient) {
+        myVideoClient.disconnectUser().catch(() => {});
       }
-      if (chatClient) {
-        chatClient.disconnectUser().catch(console.error);
+      if (myChatClient) {
+        myChatClient.disconnectUser().catch(() => {});
       }
+      connectedRef.current = false;
     };
   }, [apiKey, user, token]);
 
